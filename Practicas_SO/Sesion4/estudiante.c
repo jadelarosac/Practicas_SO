@@ -45,7 +45,8 @@ int main(int argc, char *argv[])
             printf("%d\n",n);
         }
     }
-    
-    
+
+    printf("*\n");
+
     exit(EXIT_SUCCESS);
 }

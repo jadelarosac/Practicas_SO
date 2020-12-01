@@ -9,4 +9,4 @@ estudiante.out: estudiante.c
 	$(CC) $^ -o $@ -lm
 
 clean:
-	rm estudiante.out maestro.out
+	rm *.out *.fifo

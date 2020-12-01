@@ -8,7 +8,7 @@
 #include<errno.h>
 #include<string.h>
 
-#define TAM_buf 80
+const unsigned TAM_buf = 80;
 
 
 void UsoIncorrecto()
@@ -26,93 +26,97 @@ int main(int argc, char *argv[])
         UsoIncorrecto();
     
     
-    int fd[2];
+    int num_hijos = 2;
+    int fd[num_hijos][2];
     int alrdy_rd;
-    char buff[TAM_buf], inf[sizeof(int)+1], sup[sizeof(int)+1];
-    pid_t PID = getpid();
+    char inf[strlen(argv[1])+1], sup[ strlen(argv[2]) +1];
+    pid_t PID[num_hijos];
 
     
-    int a = strtol(argv[1],0,10);
-    int b = strtol(argv[2],0,10);
-    int c = (a+b)/2;
+    const int A = strtol(argv[1],0,10) - 1;
+    const int B = strtol(argv[2],0,10);
+    double c = (B-A)/num_hijos;
+    int a, b;
     
-    printf("Los números primos entre %d y %d son:\n", a,b);
+    printf("Los números primos entre %d y %d son:\n", A+1,B);
     
-    pipe(fd); // Llamada al sistema para crear un pipe
 
-    for(int k = 0; k < 2 && PID != 0; ++k)
+
+    for(int k = 0; k < num_hijos; ++k)
     {
-        if ( (PID = fork())<0)
+        pipe(fd[k]); // Llamada al sistema para crear un pipe
+
+        a = A + k*c;
+        b = a + c;
+        
+        if( k == num_hijos -1)
+            b = B;
+
+
+        if ( (PID[k] = fork())<0)
         {
             perror("\Error en fork");
             exit(EXIT_FAILURE);
         }
 
-        if (PID == 0) 
+        if (PID[k] == 0) 
         {
-            close(fd[0]);
+            close(fd[k][0]);
 
-            if(dup2(fd[1],STDOUT_FILENO)==-1)
+            if(dup2(fd[k][1],STDOUT_FILENO)==-1)
             {
                 perror("Error en el dup2");
                 exit(EXIT_FAILURE);
             }
-            
-            if(k==0)
-            {
-                sprintf(inf, "%d", a);
-                sprintf(sup, "%d", c);
-            }
-            if(k==1)
-            {
-                sprintf(inf, "%d", c+1);
-                sprintf(sup, "%d", b);
-            }
-            
+
+            sprintf(inf, "%d", a + 1);
+            sprintf(sup, "%d", b);
+
+           
             if(execlp("./estudiante.out", "estudiante.out", inf, sup, NULL)==-1)
             {
                 perror("Error en el execlp");
                 exit(EXIT_FAILURE);
             }
         }
-        else
+        
+        close(fd[k][1]);
+    }
+        
+    for(int k = 0; k < num_hijos; ++k)
+        wait(0);
+
+    for(int k = 0; k < num_hijos; ++k)
+    {
+
+        alrdy_rd = TAM_buf - 2;
+
+        while(alrdy_rd == TAM_buf - 2)
         {
-            if(wait(0)<0)
+            
+            char buff[TAM_buf];
+
+            alrdy_rd = read(fd[k][0], buff, TAM_buf-2);
+            
+            if(alrdy_rd == -1)
             {
-                perror("Error en el wait");
+                perror("Error en el read");
                 exit(EXIT_FAILURE);
             }
-        }
-    }
-    
-    if(PID != 0) 
-    {
-        {
-            close(fd[1]);
 
-            alrdy_rd = read(fd[0], buff, TAM_buf-1);
-            
-            while(alrdy_rd == TAM_buf-1)
-            {
-                
-                if(alrdy_rd == -1)
+            for(int i = 0; i < TAM_buf; ++i)
+                if(buff[i] == '*')
                 {
-                    perror("Error en el read");
-                    exit(EXIT_FAILURE);
+                    alrdy_rd = -1;
+                    break;
                 }
-                
-                printf("%s", buff);
-                
-                alrdy_rd = read(fd[0], buff, TAM_buf-1);
-                   
-            }
-            
-            for(int k = 0; k < alrdy_rd; ++k)
-                printf("%c", buff[k]);
-            
+                else
+                    printf("%c", buff[i]);
+
         }
-    }    
-    
+
+    }
+
     
     return EXIT_SUCCESS;
 }
