@@ -89,14 +89,17 @@ int main(int argc, char *argv[])
     for(int k = 0; k < num_hijos; ++k)
     {
 
-        alrdy_rd = TAM_buf - 2;
+        alrdy_rd = TAM_buf - 1;
 
-        while(alrdy_rd == TAM_buf - 2)
+        while(alrdy_rd == TAM_buf - 1)
         {
             
             char buff[TAM_buf];
 
-            alrdy_rd = read(fd[k][0], buff, TAM_buf-2);
+            for( int i = 0; i < TAM_buf; ++i)
+                sprintf((buff+i), "%c", '\0');
+
+            alrdy_rd = read(fd[k][0], buff, TAM_buf-1);
             
             if(alrdy_rd == -1)
             {
@@ -104,15 +107,7 @@ int main(int argc, char *argv[])
                 exit(EXIT_FAILURE);
             }
 
-            for(int i = 0; i < TAM_buf; ++i)
-                if(buff[i] == '*')
-                {
-                    alrdy_rd = -1;
-                    break;
-                }
-                else
-                    printf("%c", buff[i]);
-
+            printf("%s", buff);
         }
 
     }
